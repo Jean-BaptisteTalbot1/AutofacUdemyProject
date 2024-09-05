@@ -102,11 +102,11 @@
   "project": {
     "version": "1.0.0",
     "restore": {
-      "projectUniqueName": "C:\\GitRepo\\AutofacUdemyProject\\ConsoleApp1\\ConsoleApp1\\ConsoleApp1.csproj",
+      "projectUniqueName": "C:\\GitRepo\\AufoFacUdemyProject\\ConsoleApp1\\ConsoleApp1\\ConsoleApp1.csproj",
       "projectName": "ConsoleApp1",
-      "projectPath": "C:\\GitRepo\\AutofacUdemyProject\\ConsoleApp1\\ConsoleApp1\\ConsoleApp1.csproj",
+      "projectPath": "C:\\GitRepo\\AufoFacUdemyProject\\ConsoleApp1\\ConsoleApp1\\ConsoleApp1.csproj",
       "packagesPath": "C:\\Users\\jbtalbot\\.nuget\\packages\\",
-      "outputPath": "C:\\GitRepo\\AutofacUdemyProject\\ConsoleApp1\\ConsoleApp1\\obj\\",
+      "outputPath": "C:\\GitRepo\\AufoFacUdemyProject\\ConsoleApp1\\ConsoleApp1\\obj\\",
       "projectStyle": "PackageReference",
       "fallbackFolders": [
         "C:\\Program Files (x86)\\Microsoft Visual Studio\\Shared\\NuGetPackages"
