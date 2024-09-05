@@ -15,6 +15,7 @@ namespace ConsoleApp1
         }
     }
 
+
     public class EmailLog : ILog
     {
         private const string adminEmail = "admin@foo.com";
