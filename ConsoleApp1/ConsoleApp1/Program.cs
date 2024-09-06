@@ -47,6 +47,12 @@ namespace ConsoleApp1
         private Engine engine;
         private ILog log;
 
+        public Car(Engine engine)
+        {
+            this.engine = engine;
+            this.log = new EmailLog();
+        }
+
         public Car(Engine engine, ILog log)
         {
             this.engine = engine;
@@ -67,10 +73,20 @@ namespace ConsoleApp1
             var builder = new ContainerBuilder();
 
             // Whenever someone asks for a ILog, give them a ConsoleLog. So if Engine or Car asks for a ILog, it will get a ConsoleLog.
-            builder.RegisterType<EmailLog>().As<ILog>();
+            builder.RegisterType<ConsoleLog>().As<ILog>();
             builder.RegisterType<Engine>();
-            builder.RegisterType<Car>();
-            
+
+            // Here we have two constructors for Car. The first one is the default one, and the second one is the one that takes an Engine and a ILog.
+            // So if we ask for a Car, the container will use the second constructor to create it because it has the most parameters and by default
+            // the UsingConstructor takes the most complex.
+            builder.RegisterType<Car>()
+                .UsingConstructor(typeof(Engine));
+            // The UsingConstructor() method is used to specify which constructor to use when creating an instance of a type.
+            // If we have multiple constructors, we can use the UsingConstructor() method to specify which one to use.
+            // If we need to use a specific constructor, we can pass the types of the parameters of that constructor to the UsingConstructor() method
+            // to specify which constructor to use by writing explicitly the types of the parameters of that constructor like this:
+            // builder.RegisterType<Car>().UsingConstructor(typeof(Engine)); -> We take the public Car(Engine engine) signature.
+
             // Having registered all those types on the builder, the builder can now be used to construct the container.
             IContainer container = builder.Build();
             
