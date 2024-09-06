@@ -1,5 +1,4 @@
 ﻿using Autofac;
-using Autofac.Core;
 
 namespace ConsoleApp1
 {
@@ -81,40 +80,57 @@ namespace ConsoleApp1
         }
     }
 
+    public class Parent
+    {
+        public override string ToString()
+        {
+            return "I am your father";
+        }
+    }
+
+    public class Child
+    {
+        public string Name { get; set; }
+        public Parent Parent { get; set; }
+
+        public void SetParent(Parent parent)
+        { this.Parent = parent; }
+    }
+
     internal class Program
     {
         public static void Main(string[] args)
         {
             var builder = new ContainerBuilder();
 
-            // Named parameter
-            //builder.RegisterType<SMSLog>().As<ILog>()
-            //    .WithParameter("phoneNumber", "567-123-1234");
-            
-            // Typed parameter
-            //builder.RegisterType<SMSLog>().As<ILog>()
-            //    .WithParameter(new TypedParameter(typeof(string), "678-345-1234"));
+            builder.RegisterType<Parent>();
+            //builder.RegisterType<Child>().PropertiesAutowired();
 
-            // Resolved parameter
-            //builder.RegisterType<SMSLog>().As<ILog>()
-            //    .WithParameter(
-            //        new ResolvedParameter(
-            //            // predicate (returns true if the parameter should be supplied)
-            //            (pi, ctx) => pi.ParameterType == typeof(string) && pi.Name == "phoneNumber",
-            //            // value accessor
-            //            (pi, ctx) => "567-123-1234"
-            //            )
-            //        );
+            //builder.RegisterType<Child>().WithProperty("Parent", new Parent());
 
-            Random random = new Random();
-            builder.Register((c, p) => new SMSLog(p.Named<string>("phoneNumber")))
-                .As<ILog>();
+            //builder.Register(c =>
+            //{
+            //    var child = new Child();
+            //    child.SetParent(c.Resolve<Parent>());
+            //    return child;
+            //});
 
-            Console.WriteLine("About to build container");
+            // Activating event handler
+            builder.RegisterType<Child>()
+                .OnActivated(e =>
+                {
+                    var p = e.Context.Resolve<Parent>();
+                    e.Instance.SetParent(p);
+                });
+
             var container = builder.Build();
 
-            var log = container.Resolve<ILog>(new NamedParameter("phoneNumber", random.Next().ToString()));
-            log.Write("After the build");
+            var parent = container.Resolve<Parent>();
+            var child = container.Resolve<Child>();
+
+            Console.WriteLine(child.Parent);
+
+            //PatternDemoCore.Mainn(new string[] { });
         }
     }
 }
