@@ -30,10 +30,10 @@ namespace ConsoleApp1
         private ILog log;
         private int id;
 
-        public Engine(ILog log)
+        public Engine(ILog log, int id)
         {
             this.log = log;
-            id = new Random().Next();
+            this.id = id;
         }
 
         public void Ahead(int power)
@@ -47,16 +47,16 @@ namespace ConsoleApp1
         private Engine engine;
         private ILog log;
 
-        public Car(Engine engine)
-        {
-            this.engine = engine;
-            this.log = new EmailLog();
-        }
-
         public Car(Engine engine, ILog log)
         {
             this.engine = engine;
             this.log = log;
+        }
+
+        public Car(Engine engine)
+        {
+            this.engine = engine;
+            this.log = new EmailLog();
         }
 
         public void Go()
@@ -81,18 +81,19 @@ namespace ConsoleApp1
             var log = new ConsoleLog();
             builder.RegisterInstance(log).As<ILog>();
 
-
-            builder.RegisterType<Engine>();
+            builder.Register(c =>
+                new Engine(c.Resolve<ILog>(), 123));
+            //builder.RegisterType<Engine>();
 
             // Here we have two constructors for Car. The first one is the default one, and the second one is the one that takes an Engine
             // and a ILog.
-            builder.RegisterType<Car>()
-                .UsingConstructor(typeof(Engine));
+            builder.RegisterType<Car>();
             // The UsingConstructor() method is used to specify which constructor to use when creating an instance of a type.
             // If we have multiple constructors, we can use the UsingConstructor() method to specify which one to use.
             // If we need to use a specific constructor, we can pass the types of the parameters of that constructor to the UsingConstructor() method
             // to specify which constructor to use by writing explicitly the types of the parameters of that constructor like this:
             // builder.RegisterType<Car>().UsingConstructor(typeof(Engine)); -> We take the public Car(Engine engine) signature.
+            // If we don't specify the constructor, the most complex one will be used.
 
             // Having registered all those types on the builder, the builder can now be used to construct the container.
             IContainer container = builder.Build();
