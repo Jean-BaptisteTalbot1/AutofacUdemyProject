@@ -1,61 +1,69 @@
-﻿using Autofac;
+﻿using System.Reflection;
+using Autofac;
+using Autofac.Core;
+using Module = Autofac.Module;
 
 namespace ConsoleApp1
 {
-    public interface ILog
+    public interface ILog : IDisposable
     {
         void Write(string message);
     }
 
     public class ConsoleLog : ILog
     {
+        public ConsoleLog()
+        {
+            Console.WriteLine($"{nameof(ConsoleLog)} instance created at {DateTime.Now.Ticks}");
+        }
+
         public void Write(string message)
         {
             Console.WriteLine(message);
         }
+
+        public void Dispose()
+        {
+            Console.WriteLine("ConsoleLog instance disposed");
+        }
     }
 
-    public class EmailLog : ILog
+    public class SMSLog : ILog
     {
-        private const string adminEmail = "admin@foo.com";
+        private string phoneNumber;
+
+        public SMSLog(string phoneNumber)
+        {
+            this.phoneNumber = phoneNumber;
+        }
+
+        public void Dispose()
+        {
+        }
+
         public void Write(string message)
         {
-            Console.WriteLine($"Email sent to {adminEmail}: {message}");
+            Console.WriteLine($"SMS to {phoneNumber} : {message}");
         }
     }
 
-    public class Engine
+    public class Reporting
     {
-        private ILog log;
-        private int id;
+        private readonly Lazy<ConsoleLog> log;
 
-        public Engine(ILog log)
+        public Reporting(Lazy<ConsoleLog> log)
         {
+            if (log == null)
+            {
+                throw new ArgumentNullException(nameof(log));
+            }
             this.log = log;
-            id = new Random().Next();
+            Console.WriteLine($"{nameof(Reporting)} instance created at {DateTime.Now.Ticks}");
         }
 
-        public void Ahead(int power)
+        public void Report()
         {
-            log.Write($"Engine [{id}] ahead {power}");
-        }
-    }
-
-    public class Car
-    {
-        private Engine engine;
-        private ILog log;
-
-        public Car(Engine engine, ILog log)
-        {
-            this.engine = engine;
-            this.log = log;
-        }
-
-        public void Go()
-        {
-            engine.Ahead(100);
-            log.Write("Car going forward...");
+            log.Value.Write("Log started");
         }
     }
 
@@ -65,26 +73,13 @@ namespace ConsoleApp1
         {
             var builder = new ContainerBuilder();
 
-            // Whenever someone asks for a ILog, give them a ConsoleLog. So if Engine or Car asks for a ILog, it will get a ConsoleLog.
-            builder.RegisterType<EmailLog>().As<ILog>();
-            builder.RegisterType<Engine>();
-            builder.RegisterType<Car>();
-            
-            // Having registered all those types on the builder, the builder can now be used to construct the container.
-            IContainer container = builder.Build();
-            
-            // So this container can be used to resolve types and instantiate them.
-            // Then to get an instance of Car, we can ask the container to resolve it.  
-            var car = container.Resolve<Car>();
+            builder.RegisterType<ConsoleLog>();
+            builder.RegisterType<Reporting>();
 
-            // Once we have registered the ConsoleLog as a ILog, the container will automatically inject it into the Engine and Car.
-            // ALso, the consoleLog will not be accessible to the resolvers anymore because we have registered it as a ILog.
-            // ***************
-            //// That is to say, that something like that will not work: var log = container.Resolve<ConsoleLog>();
-            //// But if we want to register a ConsoleLog as well, we can do it like this: builder.RegisterType<ConsoleLog>().AsSelf(); and then the Resole<ConsoleLog>() will work.
-            // ***************
-
-            car.Go();
+            using (var container = builder.Build())
+            {
+                container.Resolve<Reporting>().Report();
+            }
         }
     }
 }
