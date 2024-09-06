@@ -73,12 +73,19 @@ namespace ConsoleApp1
             var builder = new ContainerBuilder();
 
             // Whenever someone asks for a ILog, give them a ConsoleLog. So if Engine or Car asks for a ILog, it will get a ConsoleLog.
+            // On the following line, if we only want to give a simple ConsoleLog to any ILog :
             builder.RegisterType<ConsoleLog>().As<ILog>();
+            // But here, is a way to specify the instance, so every time someone asks for a ILog, they will get the same instance of
+            // ConsoleLog.This is useful when we want to share the same instance of a type across the application.
+            // It prevents to create a new instance of ConsoleLog every time someone asks for a ILog.
+            var log = new ConsoleLog();
+            builder.RegisterInstance(log).As<ILog>();
+
+
             builder.RegisterType<Engine>();
 
-            // Here we have two constructors for Car. The first one is the default one, and the second one is the one that takes an Engine and a ILog.
-            // So if we ask for a Car, the container will use the second constructor to create it because it has the most parameters and by default
-            // the UsingConstructor takes the most complex.
+            // Here we have two constructors for Car. The first one is the default one, and the second one is the one that takes an Engine
+            // and a ILog.
             builder.RegisterType<Car>()
                 .UsingConstructor(typeof(Engine));
             // The UsingConstructor() method is used to specify which constructor to use when creating an instance of a type.
