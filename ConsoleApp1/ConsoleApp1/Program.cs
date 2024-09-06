@@ -1,4 +1,5 @@
-﻿using Autofac;
+﻿using System.Reflection;
+using Autofac;
 
 namespace ConsoleApp1
 {
@@ -101,36 +102,18 @@ namespace ConsoleApp1
     {
         public static void Main(string[] args)
         {
+            var assembly = Assembly.GetExecutingAssembly();
             var builder = new ContainerBuilder();
+            builder.RegisterAssemblyTypes(assembly)
+                .Where(t => t.Name.EndsWith("Log"))
+                .Except<SMSLog>()
+                .Except<ConsoleLog>(c => c.As<ILog>().SingleInstance())
+                .AsSelf();
 
-            builder.RegisterType<Parent>();
-            //builder.RegisterType<Child>().PropertiesAutowired();
-
-            //builder.RegisterType<Child>().WithProperty("Parent", new Parent());
-
-            //builder.Register(c =>
-            //{
-            //    var child = new Child();
-            //    child.SetParent(c.Resolve<Parent>());
-            //    return child;
-            //});
-
-            // Activating event handler
-            builder.RegisterType<Child>()
-                .OnActivated(e =>
-                {
-                    var p = e.Context.Resolve<Parent>();
-                    e.Instance.SetParent(p);
-                });
-
-            var container = builder.Build();
-
-            var parent = container.Resolve<Parent>();
-            var child = container.Resolve<Child>();
-
-            Console.WriteLine(child.Parent);
-
-            //PatternDemoCore.Mainn(new string[] { });
+            builder.RegisterAssemblyTypes(assembly)
+                .Except<SMSLog>()
+                .Where(t => t.Name.EndsWith("Log"))
+                .As(t => t.GetInterfaces()[0]);
         }
     }
 }
