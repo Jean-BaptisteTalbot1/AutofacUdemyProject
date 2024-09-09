@@ -1,92 +1,79 @@
-﻿using System.Reflection;
-using Autofac;
-using Autofac.Core;
-using Autofac.Features.OwnedInstances;
-using Module = Autofac.Module;
+﻿using Autofac;
 
-namespace ConsoleApp1
+namespace ConsoleApp1;
+
+public interface ILog : IDisposable
 {
-    public interface ILog : IDisposable
+    void Write(string message);
+}
+
+public class ConsoleLog : ILog
+{
+    public ConsoleLog()
     {
-        void Write(string message);
+        Console.WriteLine($"{nameof(ConsoleLog)} instance created at {DateTime.Now.Ticks}");
     }
 
-    public class ConsoleLog : ILog
+    public void Write(string message)
     {
-        public ConsoleLog()
-        {
-            Console.WriteLine($"{nameof(ConsoleLog)} instance created at {DateTime.Now.Ticks}");
-        }
-
-        public void Write(string message)
-        {
-            Console.WriteLine(message);
-        }
-
-        public void Dispose()
-        {
-            Console.WriteLine("ConsoleLog instance disposed");
-        }
+        Console.WriteLine(message);
     }
 
-    public class SMSLog : ILog
+    public void Dispose()
     {
-        private string phoneNumber;
+        Console.WriteLine("ConsoleLog instance disposed");
+    }
+}
 
-        public SMSLog(string phoneNumber)
-        {
-            this.phoneNumber = phoneNumber;
-        }
+public class SMSLog : ILog
+{
+    private readonly string phoneNumber;
 
-        public void Dispose()
-        {
-        }
-
-        public void Write(string message)
-        {
-            Console.WriteLine($"SMS to {phoneNumber} : {message}");
-        }
+    public SMSLog(string phoneNumber)
+    {
+        this.phoneNumber = phoneNumber;
     }
 
-    public class Reporting
+    public void Dispose()
     {
-        private Func<ConsoleLog> consoleLog;
-        private Func<string, SMSLog> smsLog;
+    }
 
-        public Reporting(Func<ConsoleLog> consoleLog, Func<string, SMSLog> smsLog)
+    public void Write(string message)
+    {
+        Console.WriteLine($"SMS to {phoneNumber} : {message}");
+    }
+}
+
+public class Reporting
+{
+    private readonly IList<ILog> allLogs;
+
+    public Reporting(IList<ILog> allLogs)
+    {
+        if (allLogs == null) throw new ArgumentNullException(nameof(allLogs));
+
+        this.allLogs = allLogs;
+    }
+
+    public void Report()
+    {
+        foreach (var log in allLogs) log.Write($"Hello, this is {log.GetType().Name}");
+    }
+}
+
+internal class Program
+{
+    public static void Main(string[] args)
+    {
+        var builder = new ContainerBuilder();
+
+        builder.RegisterType<ConsoleLog>().As<ILog>();
+        builder.Register(c => new SMSLog("123456789")).As<ILog>();
+        builder.RegisterType<Reporting>();
+
+        using (var container = builder.Build())
         {
-            if (consoleLog == null)
-            {
-                throw new ArgumentNullException(nameof(consoleLog));
-            }
-
-            this.consoleLog = consoleLog;
-            this.smsLog = smsLog;
-        }
-
-        public void Report()
-        {
-            consoleLog().Write("Reporting to console");
-            consoleLog().Write("And again");
-
-            smsLog("1234567890").Write("Texting admins...");
-        }
-
-        internal class Program
-        {
-            public static void Main(string[] args)
-            {
-                var builder = new ContainerBuilder();
-
-                builder.RegisterType<ConsoleLog>();
-                builder.RegisterType<SMSLog>();
-                builder.RegisterType<Reporting>();
-
-                using (var container = builder.Build())
-                {
-                    container.Resolve<Reporting>().Report();
-                }
-            }
+            container.Resolve<Reporting>().Report();
         }
     }
 }
