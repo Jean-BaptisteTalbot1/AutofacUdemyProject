@@ -1,6 +1,7 @@
 ﻿using System.Reflection;
 using Autofac;
 using Autofac.Core;
+using Autofac.Features.OwnedInstances;
 using Module = Autofac.Module;
 
 namespace ConsoleApp1
@@ -49,21 +50,23 @@ namespace ConsoleApp1
 
     public class Reporting
     {
-        private readonly Lazy<ConsoleLog> log;
+        private Owned<ConsoleLog> log;
 
-        public Reporting(Lazy<ConsoleLog> log)
+        public Reporting(Owned<ConsoleLog> log)
         {
             if (log == null)
             {
                 throw new ArgumentNullException(nameof(log));
             }
             this.log = log;
-            Console.WriteLine($"{nameof(Reporting)} instance created at {DateTime.Now.Ticks}");
+            Console.WriteLine("Reporting initialized");
+
         }
 
-        public void Report()
+        public void ReportOnce()
         {
             log.Value.Write("Log started");
+            log.Dispose();
         }
     }
 
@@ -78,7 +81,8 @@ namespace ConsoleApp1
 
             using (var container = builder.Build())
             {
-                container.Resolve<Reporting>().Report();
+                container.Resolve<Reporting>().ReportOnce();
+                Console.WriteLine("Done reporting");
             }
         }
     }
