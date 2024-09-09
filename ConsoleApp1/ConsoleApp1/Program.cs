@@ -50,39 +50,38 @@ namespace ConsoleApp1
 
     public class Reporting
     {
-        private Owned<ConsoleLog> log;
+        private Func<ConsoleLog> consoleLog;
 
-        public Reporting(Owned<ConsoleLog> log)
+        public Reporting(Func<ConsoleLog> consoleLog)
         {
-            if (log == null)
+            if (consoleLog == null)
             {
-                throw new ArgumentNullException(nameof(log));
+                throw new ArgumentNullException(nameof(consoleLog));
             }
-            this.log = log;
-            Console.WriteLine("Reporting initialized");
 
+            this.consoleLog = consoleLog;
         }
 
-        public void ReportOnce()
+        public void Report()
         {
-            log.Value.Write("Log started");
-            log.Dispose();
+            consoleLog().Write("Reporting to console");
+            consoleLog().Write("And again");
         }
-    }
 
-    internal class Program
-    {
-        public static void Main(string[] args)
+        internal class Program
         {
-            var builder = new ContainerBuilder();
-
-            builder.RegisterType<ConsoleLog>();
-            builder.RegisterType<Reporting>();
-
-            using (var container = builder.Build())
+            public static void Main(string[] args)
             {
-                container.Resolve<Reporting>().ReportOnce();
-                Console.WriteLine("Done reporting");
+                var builder = new ContainerBuilder();
+
+                builder.RegisterType<ConsoleLog>();
+                builder.RegisterType<SMSLog>();
+                builder.RegisterType<Reporting>();
+
+                using (var container = builder.Build())
+                {
+                    container.Resolve<Reporting>().Report();
+                }
             }
         }
     }
