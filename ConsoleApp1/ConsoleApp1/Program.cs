@@ -51,8 +51,9 @@ namespace ConsoleApp1
     public class Reporting
     {
         private Func<ConsoleLog> consoleLog;
+        private Func<string, SMSLog> smsLog;
 
-        public Reporting(Func<ConsoleLog> consoleLog)
+        public Reporting(Func<ConsoleLog> consoleLog, Func<string, SMSLog> smsLog)
         {
             if (consoleLog == null)
             {
@@ -60,12 +61,15 @@ namespace ConsoleApp1
             }
 
             this.consoleLog = consoleLog;
+            this.smsLog = smsLog;
         }
 
         public void Report()
         {
             consoleLog().Write("Reporting to console");
             consoleLog().Write("And again");
+
+            smsLog("1234567890").Write("Texting admins...");
         }
 
         internal class Program
