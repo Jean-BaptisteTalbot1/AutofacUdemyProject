@@ -1,4 +1,5 @@
 ﻿using Autofac;
+using Autofac.Features.Indexed;
 using Autofac.Features.Metadata;
 
 namespace ConsoleApp1;
@@ -52,24 +53,20 @@ public class Settings
 
 public class Reporting
 {
-    private Meta<ConsoleLog, Settings> log;
+    private IIndex<string, ILog> logs;
 
-    public Reporting(Meta<ConsoleLog, Settings> log)
+    public Reporting(IIndex<string, ILog> logs)
     {
-        if (log == null)
+        if (logs == null)
         {
-            throw new ArgumentNullException(nameof(log));
+            throw new ArgumentNullException(nameof(logs));
         }
-        this.log = log;
+        this.logs = logs;
     }
 
     public void Report()
     {
-        log.Value.Write("Starting report");
-
-        //if (log.Metadata["mode"] as string == "verbose")
-        if (log.Metadata.LogMode == "verbose")
-            log.Value.Write($"VERBOSE MODE : Logger started on {DateTime.Now}");
+        logs["cmd"].Write("Starting the report output");
     }
 }
 
@@ -78,9 +75,8 @@ internal class Program
     public static void Main(string[] args)
     {
         var builder = new ContainerBuilder();
-        //builder.RegisterType<ConsoleLog>().WithMetadata("mode", "verbose");
-        builder.RegisterType<ConsoleLog>()
-            .WithMetadata<Settings>(c => c.For(x => x.LogMode, "verbose"));
+        builder.RegisterType<ConsoleLog>().Keyed<ILog>("cmd");
+        builder.Register((c, p) => new SMSLog("12334524")).Keyed<ILog>("sms");
         builder.RegisterType<Reporting>();
 
         using (var container = builder.Build())
