@@ -7,127 +7,37 @@ using Module = Autofac.Module;
 
 namespace AutofacSamples
 {
-    public interface ILog
-    {
-        void Write(string message);
-    }
-
-    public interface IConsole
+    public class IResource
     {
 
     }
 
-    public class ConsoleLog : ILog, IConsole
+    class SingletonResource : IResource
     {
-        public ConsoleLog()
+    }
+
+    public class InstancePerDependencyResource: IResource, IDisposable
+    {
+        public InstancePerDependencyResource()
         {
-            Console.WriteLine("Creating a console log!");
+            Console.WriteLine("Instance per dep created");
         }
 
-        public void Write(string message)
+        public void Dispose()
         {
-            Console.WriteLine(message);
+            Console.WriteLine("Instance per dep disposed");
         }
     }
 
-    public class EmailLog : ILog
+    public class ResourceManager
     {
-        private const string adminEmail = "admin@foo.com";
-
-        public void Write(string message)
+        public ResourceManager(IEnumerable<IResource> resources)
         {
-            Console.WriteLine($"Email sent to {adminEmail} : {message}");
-        }
-    }
-
-    public class Engine
-    {
-        private ILog log;
-        private int id;
-
-        public Engine(ILog log)
-        {
-            this.log = log;
-            id = new Random().Next();
+            Resources = resources ?? throw new ArgumentNullException(nameof(resources));
+            Console.WriteLine("ResourceManager.ctor");
         }
 
-        public Engine(ILog log, int id)
-        {
-            this.log = log;
-            this.id = id;
-        }
-
-        public void Ahead(int power)
-        {
-            log.Write($"Engine [{id}] ahead {power}");
-        }
-    }
-
-    public class SMSLog : ILog
-    {
-        private string phoneNumber;
-
-        public SMSLog(string phoneNumber)
-        {
-            this.phoneNumber = phoneNumber;
-        }
-
-        public void Write(string message)
-        {
-            Console.WriteLine($"SMS to {phoneNumber} : {message}");
-        }
-    }
-
-    public class Car
-    {
-        private Engine engine;
-        private ILog log;
-
-        public Car(Engine engine)
-        {
-            this.engine = engine;
-            this.log = new EmailLog();
-        }
-
-        public Car(Engine engine, ILog log)
-        {
-            this.engine = engine;
-            this.log = log;
-        }
-
-        public void Go()
-        {
-            engine.Ahead(100);
-            log.Write("Car going forward...");
-        }
-    }
-
-    public class Parent
-    {
-        public override string ToString()
-        {
-            return "I am your father";
-        }
-    }
-
-    public class Child
-    {
-        public string Name { get; set; }
-        public Parent Parent { get; set; }
-
-        public void SetParent(Parent parent)
-        {
-            Parent = parent;
-        }
-    }
-
-    public class ParentChildModule : Module
-    {
-        protected override void Load(ContainerBuilder builder)
-        {
-            builder.RegisterType<Parent>();
-            builder.Register(c => new Child() { Parent = c.Resolve<Parent>() });
-        }
+        public IEnumerable<IResource> Resources { get; set; }
     }
 
     internal class Program
@@ -135,24 +45,18 @@ namespace AutofacSamples
         public static void Main(string[] args)
         {
             var builder = new ContainerBuilder();
-            builder.RegisterType<ConsoleLog>()
-                .InstancePerMatchingLifetimeScope("foo");
+            builder.RegisterType<ResourceManager>().SingleInstance();
+            builder.RegisterType<SingletonResource>()
+                .As<IResource>().SingleInstance();
+            builder.RegisterType<InstancePerDependencyResource>()
+                .As<IResource>();
 
-            var container = builder.Build();
-
-            using (var scope1 = container.BeginLifetimeScope("foo"))
+            using (var container = builder.Build())
             {
-                for (int i = 0; i < 3; i++)
+                using (var scope = container.BeginLifetimeScope())
                 {
-                    scope1.Resolve<ConsoleLog>();
-                }
-
-                using (var scope2 = scope1.BeginLifetimeScope())
-                {
-                    for (int i = 0; i < 3; i++)
-                    {
-                        scope2.Resolve<ConsoleLog>();
-                    }
+                    var resourceManager = scope.Resolve<ResourceManager>();
+                    Console.WriteLine("ResourceManager.Resources.Count: " + resourceManager.Resources.Count());
                 }
             }
         }
