@@ -148,45 +148,30 @@ namespace AutofacSamples
         }
     }
 
+    public class MyClass : IStartable
+    {
+        public MyClass()
+        {
+            Console.WriteLine("MyClass ctor");
+        }
+        public void Start()
+        {
+            Console.WriteLine("MyClass is starting)");
+        }
+    }
+
     internal class Program
     {
         public static void Main(string[] args)
         {
             var builder = new ContainerBuilder();
-            builder.RegisterType<Parent>();
-            builder.RegisterType<Child>()
-                .OnActivating(a =>
-                {
-                    Console.WriteLine("Child activating");
-                    //a.Instance.Parent = a.Context.Resolve<Parent>();
-                    a.ReplaceInstance(new BadChild());
-                })
-                .OnActivated(a =>
-                {
-                    Console.WriteLine("Child activated");
-                })
-                .OnRelease(a =>
-                {
-                    Console.WriteLine("Child releasing");
-                });
-
-            builder.RegisterType<ConsoleLog>().AsSelf();
-            builder.Register<ILog>(c => c.Resolve<ConsoleLog>())
-                .OnActivating(a => a.ReplaceInstance(new SMSLog("123456")));
+            builder.RegisterType<MyClass>()
+                .AsSelf()
+                .As<IStartable>()
+                .SingleInstance();
 
             var container = builder.Build();
-
-            using (var scope = container.BeginLifetimeScope())
-            {   
-                var child = scope.Resolve<Child>();
-                var parent = child.Parent;
-                Console.WriteLine(parent);
-                Console.WriteLine(child);
-
-                var log = scope.Resolve<ILog>();
-                log.Write("Testing");
-            }
-            
+            container.Resolve<MyClass>();
         }
     }
 }
