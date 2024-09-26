@@ -124,6 +124,19 @@ namespace AutofacSamples
         {
             Parent = parent;
         }
+
+        public Child()
+        {
+            Console.WriteLine("Child created");
+        }
+    }
+
+    class BadChild : Child
+    {
+        public override string ToString()
+        {
+            return "I hate you"; 
+        }
     }
 
     public class ParentChildModule : Module
@@ -140,14 +153,38 @@ namespace AutofacSamples
         public static void Main(string[] args)
         {
             var builder = new ContainerBuilder();
-            //builder.RegisterType<ConsoleLog>();
-            builder.RegisterInstance(new ConsoleLog());
+            builder.RegisterType<Parent>();
+            builder.RegisterType<Child>()
+                .OnActivating(a =>
+                {
+                    Console.WriteLine("Child activating");
+                    //a.Instance.Parent = a.Context.Resolve<Parent>();
+                    a.ReplaceInstance(new BadChild());
+                })
+                .OnActivated(a =>
+                {
+                    Console.WriteLine("Child activated");
+                })
+                .OnRelease(a =>
+                {
+                    Console.WriteLine("Child releasing");
+                });
+
+            builder.RegisterType<ConsoleLog>().AsSelf();
+            builder.Register<ILog>(c => c.Resolve<ConsoleLog>())
+                .OnActivating(a => a.ReplaceInstance(new SMSLog("123456")));
+
             var container = builder.Build();
 
             using (var scope = container.BeginLifetimeScope())
-            {
-                var log = scope.Resolve<ConsoleLog>();
-                log.Write("Hello from console log!");
+            {   
+                var child = scope.Resolve<Child>();
+                var parent = child.Parent;
+                Console.WriteLine(parent);
+                Console.WriteLine(child);
+
+                var log = scope.Resolve<ILog>();
+                log.Write("Testing");
             }
             
         }
