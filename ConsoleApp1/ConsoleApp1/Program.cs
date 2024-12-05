@@ -156,7 +156,7 @@ namespace AutofacSamples
         }
         public void Start()
         {
-            Console.WriteLine("MyClass is starting)");
+            Console.WriteLine("MyClass is starting");
         }
     }
 
