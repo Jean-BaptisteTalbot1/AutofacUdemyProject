@@ -1,83 +1,55 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Reflection;
+using System.IO;
 using Autofac;
-using Autofac.Core;
-using Module = Autofac.Module;
+using Autofac.Configuration;
+using Microsoft.Extensions.Configuration;
 
 namespace AutofacSamples
 {
-    public interface IVehicle
+  public interface IOperation
+  {
+    float Calculate(float a, float b);
+  }
+
+  public class Addition : IOperation
+  {
+    public float Calculate(float a, float b)
     {
-        void Go();
+      return a + b;
     }
+  }
 
-    class Truck : IVehicle
+  public class Multiplication : IOperation
+  {
+    public float Calculate(float a, float b)
     {
-        IDriver driver;
+      return a * b;
+    }
+  }
 
-        public Truck(IDriver driver)
+  public class Program
+  {
+    static void Main(string[] args)
+    {
+      var configBuilder = new ConfigurationBuilder()
+        .SetBasePath(Directory.GetCurrentDirectory())
+        .AddJsonFile("config.json");
+      var configuration = configBuilder.Build();
+
+      var containerBuilder = new ContainerBuilder();
+      var configModule = new ConfigurationModule(configuration);
+      containerBuilder.RegisterModule(configModule);
+
+      using (var container = containerBuilder.Build())
+      {
+        float a = 3, b = 4;
+
+        foreach (IOperation op in container.Resolve<IList<IOperation>>())
         {
-            if (driver == null)
-            {
-                throw new ArgumentNullException(nameof(driver));
-            }
-            this.driver = driver;
+          Console.WriteLine($"{op.GetType().Name} of {a} and {b} = {op.Calculate(a, b)}");
         }
-
-        public void Go()
-        {
-            driver.Drive();
-        }
+      }
     }
-
-    public interface IDriver
-    {
-        void Drive();
-    }
-
-    public class CrazyDriver : IDriver
-    {
-        public void Drive()
-        {
-            Console.WriteLine("Going to fast and crashing into a tree");
-        }
-    }
-
-    public class SaneDriver : IDriver
-    {
-        public void Drive()
-        {
-            Console.WriteLine("Driving safely to destination");
-        }
-    }
-
-    public class TransportModule : Module
-    {
-        public bool ObeySpeedLimit { get; set; }
-
-        protected override void Load(ContainerBuilder builder)
-        {
-            if (ObeySpeedLimit)
-                builder.RegisterType<SaneDriver>().As<IDriver>();
-            else
-                builder.RegisterType<CrazyDriver>().As<IDriver>();
-
-            builder.RegisterType<Truck>().As<IVehicle>();
-        }
-    }
-
-    internal class Program
-    {
-        public static void Main(string[] args)
-        {
-            var builder = new ContainerBuilder();
-            builder.RegisterModule(new TransportModule{ObeySpeedLimit = true});
-
-            using (var c = builder.Build())
-            {
-                c.Resolve<IVehicle>().Go();
-            }
-        }
-    }
+  }
 }
